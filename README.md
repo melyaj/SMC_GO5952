@@ -79,6 +79,20 @@ Data is **not** included in this repository, only the pipeline code and notebook
 
 See `environment.yml` for the full specification.
 
+## Note on `jwst.datamodels`
+
+The JWST pipeline uses `datamodels` instead of `astropy.io.fits` to read/write FITS files.
+It understands the JWST-specific file structure:
+
+| `datamodels` | `astropy` equivalent |
+|---|---|
+| `dm.data` | `hdul['SCI'].data` |
+| `dm.dq` | `hdul['DQ'].data` |
+| `dm.meta.wcs` | WCS with full JWST distortion model |
+| `dm.meta.wcsinfo` | WCS metadata (RA, Dec, PA, etc.) |
+
+All pipeline steps (`calwebb_detector1`, `calwebb_image2`, `calwebb_image3`) expect `datamodels` objects as input.
+
 ## Authors
 
 - Meriem Elyajouri (STScI)
