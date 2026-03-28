@@ -47,6 +47,7 @@ from astropy.stats import sigma_clipped_stats
 from astropy.visualization import simple_norm
 from astropy.convolution import Gaussian1DKernel, convolve
 from tweakwcs import JWSTWCSCorrector
+from tweakwcs import JWSTgWCS
 
 from jwst import datamodels
 from jwst.datamodels import dqflags
@@ -114,9 +115,39 @@ def get_stats(data):
 def stats_label(med, std, neg):
     """Format stats into a string for plot overlay."""
     return f"median = {med:.3f} MJy/sr\n$\\sigma$ = {std:.3f} MJy/sr\nneg = {neg:.1f}%"
+
+
 # ═══════════════════════════════════════════════════════════
 # PLOTTING
 # ═══════════════════════════════════════════════════════════
+
+def show_miri(data, title='', vmin=None, vmax=None, cmap='afmhot', ax=None):
+    """Quick display of a MIRI image."""
+    if ax is None:
+        fig, ax = plt.subplots(1, 1, figsize=(8, 8))
+    if vmin is None or vmax is None:
+        norm = simple_norm(data, 'sqrt', percent=99)
+    else:
+        norm = simple_norm(data, 'sqrt', vmin=vmin, vmax=vmax)
+    ax.imshow(data, cmap=cmap, origin='lower', norm=norm)
+    ax.set_title(title)
+    return ax
+
+
+def file_stats(data, dq=None, label=''):
+    """Print stats for a MIRI image."""
+    d = data.copy().astype(float)
+    if dq is not None:
+        bad = (dq & dqflags.pixel['DO_NOT_USE']) > 0
+        d[bad] = np.nan
+    d[d == 0] = np.nan
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        _, med, std = sigma_clipped_stats(d, sigma=3)
+    valid = np.sum(np.isfinite(d))
+    total = d.size
+    print(f"  {label}: median={med:.3f}  σ={std:.3f}  valid={valid}/{total} ({100*valid/total:.1f}%)")
+    return med, std
 
 def plot_mosaic(data, title, filename, fig_dir=".", figsize=(12, 10),
                cmap="afmhot", dpi=200, stats_txt=None):
@@ -207,15 +238,16 @@ def plot_comparison(data1, data2, title1, title2, filename, fig_dir=".",
 
 def fix_rateints_to_rate(mfile):
     """
-    Fix the rate file computation from the rateints file (K. Gordon, miri_clean.py).
+    Fix the rate/rateints averaging bug (Gordon).
 
-    Addresses an issue with averaging the rateints file and in removing data
-    with only one good measurement in the default JWST pipeline.
+    The default JWST pipeline averages integrations incorrectly.
+    This re-averages the rateints file with proper NaN handling
+    to produce a corrected rate file.
 
     Parameters
     ----------
     mfile : str
-        Path to a MIRI rate image (i.e., *_rate.fits).
+        Path to the *_rate.fits file.
 
     Returns
     -------
@@ -270,38 +302,31 @@ def flag_lyot(cal_file, lyot_row=700, lyot_col=310):
     dm.close()
 
 
-def column_clean(cal_file, sigma=20, exclude_above=250.0, mask_zeros=True):
+def column_clean(cal_file, sigma=20, exclude_above=250.0):
     """
-    Column cleaning for cal images (adapted from K. Gordon, miri_clean.py — cal_column_clean).
+    Gordon's cal_column_clean algorithm.
 
-    Removes column-correlated noise (pulldown/pullup) by computing the median
-    of each column, smoothing with a Gaussian kernel to preserve large-scale
-    structure, and subtracting the residual high-frequency pattern.
+    Removes column-correlated noise (pulldown/pullup) by:
+    1. Computing the median of each column (excluding bad/bright pixels)
+    2. Smoothing that 1D profile with a Gaussian kernel
+    3. Subtracting the smoothed profile → isolates high-frequency column noise
+    4. Tiling back to 2D and subtracting from the image
 
-    Adapted from K. Gordon's original: added exclude_above threshold and optional
-    zero masking (from his rate-level column_clean) to the cal-level version.
-
-    IMPORTANT: Must be applied to cal files BEFORE background subtraction 
-    because the exclude_above value is calibrated on the background level.
-    Output is saved as *_cc_cal.fits — original cal files are never modified.
+    IMPORTANT: Must be applied to cal files BEFORE background subtraction,
+    because the column medians need the full background level to work correctly.
 
     Parameters
     ----------
     cal_file : str
-        Path to a *_cal.fits file. NOT modified, output saved as *_cc_cal.fits.
+        Path to a *_cal.fits file. Modified in-place.
     sigma : float
         Gaussian σ (in pixels) for smoothing the column median profile.
     exclude_above : float
         Exclude pixels above this value (MJy/sr) from column medians.
         Filter-dependent — tune based on background level.
-    mask_zeros : bool
-        If True, mask zero-valued pixels before computing column medians.
-        If False, keep zeros (like Gordon's original cal_column_clean).
 
     Returns
     -------
-    outfile : str
-        Path to the column-cleaned output file (*_cc_cal.fits).
     correction_std : float
         Standard deviation of the correction image (diagnostic).
     """
@@ -309,24 +334,20 @@ def column_clean(cal_file, sigma=20, exclude_above=250.0, mask_zeros=True):
     rimage = copy.deepcopy(dm.data)
     kernel = Gaussian1DKernel(stddev=sigma)
 
-    # Mask bad pixels (DQ)
+    # Mask bad pixels (DQ) + zeros + bright sources
     bdata = (dm.dq & dqflags.pixel['DO_NOT_USE']) > 0
     rimage[bdata] = np.nan
-
-    # Optionally mask zeros
-    if mask_zeros:
-        rimage[rimage == 0.0] = np.nan
-
-    # Mask bright sources
-    if exclude_above is not None:
-        rimage[rimage > exclude_above] = np.nan
+    rimage[rimage == 0.0] = np.nan
+    rimage[rimage > exclude_above] = np.nan
 
     # Column medians (ignoring masked pixels)
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore', message='All-NaN slice encountered')
         colmeds = np.nanmedian(rimage, axis=0)
 
-    # Smooth to preserve large-scale structure
+    # Smooth the column medians with a Gaussian kernel.
+    # Subtracting the smoothed version isolates the high-frequency
+    # column-to-column noise we want to remove.
     colmeds_smooth = convolve(colmeds - np.nanmedian(colmeds), kernel)
     colmeds_sub = colmeds - colmeds_smooth
 
@@ -337,10 +358,9 @@ def column_clean(cal_file, sigma=20, exclude_above=250.0, mask_zeros=True):
     colimage[bdata] = 0.0
     colimage = np.nan_to_num(colimage, nan=0.0)
 
-    # Apply correction and save as NEW file
+    # Apply correction
     dm.data -= colimage
-    outfile = cal_file.replace("_cal.fits", "_cc_cal.fits")
-    dm.save(outfile)
+    dm.save(cal_file)
     dm.close()
 
     # Diagnostic: std of the correction
@@ -348,7 +368,7 @@ def column_clean(cal_file, sigma=20, exclude_above=250.0, mask_zeros=True):
         warnings.simplefilter('ignore')
         _, _, correction_std = sigma_clipped_stats(colimage[colimage != 0], sigma=3)
 
-    return outfile, correction_std
+    return correction_std
 
 
 def subtract_background(cal_file, master_bkg, output_dir, suffix="_bkgsub"):
@@ -385,23 +405,7 @@ def subtract_background(cal_file, master_bkg, output_dir, suffix="_bkgsub"):
 def shift_wcs(mfile, shifts, out_suffix):
     """
     Apply a rigid RA/Dec shift to the WCS of a cal file.
-
-    Shifts are measured from F560W alignment to Gaia.
-    Uses tweakwcs to update the WCS without modifying pixel data.
-
-    Parameters
-    ----------
-    mfile : str
-        Path to the input *_cal.fits file.
-    shifts : list of float
-        [delta_RA, delta_Dec] in arcsec.
-    out_suffix : str
-        Suffix appended before _cal.fits in the output filename.
-
-    Returns
-    -------
-    outfile : str
-        Path to the WCS-shifted output file.
+    Uses JWSTWCSCorrector. Used in F2100W pipeline.
     """
     dm = datamodels.open(mfile)
     wcs_c = JWSTWCSCorrector(wcs=dm.meta.wcs, wcsinfo=dm.meta.wcsinfo.instance)
@@ -410,6 +414,26 @@ def shift_wcs(mfile, shifts, out_suffix):
     outfile = mfile.replace("_cal.fits", f"{out_suffix}_cal.fits")
     dm.save(outfile)
     dm.close()
+    return outfile
+
+
+def shift_cal_wcs(mfile, shifts):
+    """
+    Shift the WCS of a cal file by the input shifts in arcsec in V2, V3.
+    Saves as *_wcs_cal.fits.
+    From Karl Gordon's miri_clean.py (lines 399-426). We added .close() only.
+    """
+    image_model = datamodels.open(mfile)
+    matrix = [[1.0, 0.0], [0.0, 1.0]]  # no rotation or skew
+    wcs_corrector = JWSTgWCS(
+        wcs=image_model.meta.wcs,
+        wcsinfo=image_model.meta.wcsinfo.instance)
+    wcs_corrector.set_correction(
+        matrix=matrix, shift=shifts, ref_tpwcs=wcs_corrector)
+    image_model.meta.wcs = wcs_corrector.wcs
+    outfile = mfile.replace("_cal.fits", "_wcs_cal.fits")
+    image_model.write(outfile)
+    image_model.close()
     return outfile
 
 
@@ -516,3 +540,4 @@ def build_master_background(bkg_dir, pattern="jw03429*/jw*_cal.fits"):
 
     master_bkg = np.nanmedian(bkg_stack, axis=0)
     return master_bkg, len(bkg_cals)
+
