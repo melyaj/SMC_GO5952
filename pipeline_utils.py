@@ -113,9 +113,7 @@ def get_stats(data):
 
 def stats_label(med, std, neg):
     """Format stats into a string for plot overlay."""
-    return f"$\\sigma$ = {std:.3f} MJy/sr\nneg = {neg:.1f}%"
-
-
+    return f"median = {med:.3f} MJy/sr\n$\\sigma$ = {std:.3f} MJy/sr\nneg = {neg:.1f}%"
 # ═══════════════════════════════════════════════════════════
 # PLOTTING
 # ═══════════════════════════════════════════════════════════
@@ -209,16 +207,15 @@ def plot_comparison(data1, data2, title1, title2, filename, fig_dir=".",
 
 def fix_rateints_to_rate(mfile):
     """
-    Fix the rate/rateints averaging bug (Gordon).
+    Fix the rate file computation from the rateints file (K. Gordon, miri_clean.py).
 
-    The default JWST pipeline averages integrations incorrectly.
-    This re-averages the rateints file with proper NaN handling
-    to produce a corrected rate file.
+    Addresses an issue with averaging the rateints file and in removing data
+    with only one good measurement in the default JWST pipeline.
 
     Parameters
     ----------
     mfile : str
-        Path to the *_rate.fits file.
+        Path to a MIRI rate image (i.e., *_rate.fits).
 
     Returns
     -------
@@ -273,31 +270,38 @@ def flag_lyot(cal_file, lyot_row=700, lyot_col=310):
     dm.close()
 
 
-def column_clean(cal_file, sigma=20, exclude_above=250.0):
+def column_clean(cal_file, sigma=20, exclude_above=250.0, mask_zeros=True):
     """
-    Gordon's cal_column_clean algorithm.
+    Column cleaning for cal images (adapted from K. Gordon, miri_clean.py — cal_column_clean).
 
-    Removes column-correlated noise (pulldown/pullup) by:
-    1. Computing the median of each column (excluding bad/bright pixels)
-    2. Smoothing that 1D profile with a Gaussian kernel
-    3. Subtracting the smoothed profile → isolates high-frequency column noise
-    4. Tiling back to 2D and subtracting from the image
+    Removes column-correlated noise (pulldown/pullup) by computing the median
+    of each column, smoothing with a Gaussian kernel to preserve large-scale
+    structure, and subtracting the residual high-frequency pattern.
 
-    IMPORTANT: Must be applied to cal files BEFORE background subtraction,
-    because the column medians need the full background level to work correctly.
+    Adapted from K. Gordon's original: added exclude_above threshold and optional
+    zero masking (from his rate-level column_clean) to the cal-level version.
+
+    IMPORTANT: Must be applied to cal files BEFORE background subtraction 
+    because the exclude_above value is calibrated on the background level.
+    Output is saved as *_cc_cal.fits — original cal files are never modified.
 
     Parameters
     ----------
     cal_file : str
-        Path to a *_cal.fits file. Modified in-place.
+        Path to a *_cal.fits file. NOT modified, output saved as *_cc_cal.fits.
     sigma : float
         Gaussian σ (in pixels) for smoothing the column median profile.
     exclude_above : float
         Exclude pixels above this value (MJy/sr) from column medians.
         Filter-dependent — tune based on background level.
+    mask_zeros : bool
+        If True, mask zero-valued pixels before computing column medians.
+        If False, keep zeros (like Gordon's original cal_column_clean).
 
     Returns
     -------
+    outfile : str
+        Path to the column-cleaned output file (*_cc_cal.fits).
     correction_std : float
         Standard deviation of the correction image (diagnostic).
     """
@@ -305,20 +309,24 @@ def column_clean(cal_file, sigma=20, exclude_above=250.0):
     rimage = copy.deepcopy(dm.data)
     kernel = Gaussian1DKernel(stddev=sigma)
 
-    # Mask bad pixels (DQ) + zeros + bright sources
+    # Mask bad pixels (DQ)
     bdata = (dm.dq & dqflags.pixel['DO_NOT_USE']) > 0
     rimage[bdata] = np.nan
-    rimage[rimage == 0.0] = np.nan
-    rimage[rimage > exclude_above] = np.nan
+
+    # Optionally mask zeros
+    if mask_zeros:
+        rimage[rimage == 0.0] = np.nan
+
+    # Mask bright sources
+    if exclude_above is not None:
+        rimage[rimage > exclude_above] = np.nan
 
     # Column medians (ignoring masked pixels)
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore', message='All-NaN slice encountered')
         colmeds = np.nanmedian(rimage, axis=0)
 
-    # Smooth the column medians with a Gaussian kernel.
-    # Subtracting the smoothed version isolates the high-frequency
-    # column-to-column noise we want to remove.
+    # Smooth to preserve large-scale structure
     colmeds_smooth = convolve(colmeds - np.nanmedian(colmeds), kernel)
     colmeds_sub = colmeds - colmeds_smooth
 
@@ -329,9 +337,10 @@ def column_clean(cal_file, sigma=20, exclude_above=250.0):
     colimage[bdata] = 0.0
     colimage = np.nan_to_num(colimage, nan=0.0)
 
-    # Apply correction
+    # Apply correction and save as NEW file
     dm.data -= colimage
-    dm.save(cal_file)
+    outfile = cal_file.replace("_cal.fits", "_cc_cal.fits")
+    dm.save(outfile)
     dm.close()
 
     # Diagnostic: std of the correction
@@ -339,7 +348,7 @@ def column_clean(cal_file, sigma=20, exclude_above=250.0):
         warnings.simplefilter('ignore')
         _, _, correction_std = sigma_clipped_stats(colimage[colimage != 0], sigma=3)
 
-    return correction_std
+    return outfile, correction_std
 
 
 def subtract_background(cal_file, master_bkg, output_dir, suffix="_bkgsub"):
