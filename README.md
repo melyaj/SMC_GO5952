@@ -1,104 +1,70 @@
 # JWST Imaging Pipeline — SMC-SW-Bar-3 (GO-5952)
 
-Custom data reduction pipeline for JWST/MIRI and NIRCam imaging of SMC-SW-Bar-3 (PI: J. Roman-Duval), Cycle: 3, Proposal Category: GO https://www.stsci.edu/jwst/phase2-public/5952.pdf
+Custom data reduction for JWST/MIRI imaging of SMC-SW-Bar-3.  
+Program GO-5952 (PI: J. Roman-Duval), Cycle 3.  
+Proposal: https://www.stsci.edu/jwst/phase2-public/5952.pdf
 
+Last updated: March 2026
 
-## Pipeline overview
+## Pipeline
 
 ```
 Stage 1 (detector1 + fix_rateints)
   → Stage 2 (image2, no resample)
+    → [F2100W only: column clean → background subtraction (Clark GO-3429)]
+    → WCS shifts (from F560W tweakreg)
     → Lyot flag
-      → Column clean 
-        → Background subtraction (Clark GO-3429)
-          → WCS shifts (F560W)
-            → Stage 3 (image3, drizzle)
-              → 2D polynomial background subtraction (see xx.ipynb)
+    → Stage 3 (image3, drizzle)
+    → 2D polynomial sky subtraction
 ```
 
-### Key steps
-
-- **Column cleaning:** K. Gordon's `cal_column_clean` algorithm removes column-correlated detector noise. Applied to cal files before background subtraction.
-- **Background subtraction:** Dedicated background field from C. Clark (GO-3429), median-stacked into a master background frame.
-- **WCS correction:** RA/Dec shifts measured from F560W alignment applied via `tweakwcs`.
-- **fix_rateints:** improves the default JWST pipeline's averaging of integrations (K. Gordon).
+**Key customizations vs MAST:**
+- `ipc: skip` — current ref files add noise (K. Gordon)
+- `jump.rejection_threshold: 5.0σ` — less aggressive for extended emission
+- `fix_rateints_to_rate` — re-average integrations with NaN handling (K. Gordon, `miri_clean.py`)
+- WCS: two-pass tweakreg on F560W, shifts reused for all other filters
+- F2100W: column cleaning + dedicated background field from C. Clark (GO-3429)
 
 ## Repository structure
 
 ```
 ├── README.md
-├── pipeline_utils.py            # Shared helper functions (all filters)
-├── environment.yml              # Conda environment specification
+├── pipeline_utils.py          # Shared pipeline functions
+├── skysub_utils.py            # 2D polynomial sky subtraction functions
+├── environment.yml
 ├── miri/
-│   ├── 7_F2100W_pipeline.ipynb  # Full pipeline for F2100W
-│   ├── 7_F770W_pipeline.ipynb   # (to be added)
-│   ├── 7_F1000W_pipeline.ipynb  # (to be added)
-│   ├── 7_F1130W_pipeline.ipynb  # (to be added)
-│   ├── 7_F1500W_pipeline.ipynb  # (to be added)
-│   └── 09_bkg_polynomial_subtract.ipynb
-└── nircam/                      # (to be added)
+│   ├── F560W_pipeline.ipynb   # Reference filter (WCS alignment measured here)
+│   ├── F560W_skysub.ipynb
+│   ├── F770W_pipeline.ipynb
+│   ├── F770W_skysub.ipynb
+│   ├── F1000W_pipeline.ipynb
+│   ├── F1000W_skysub.ipynb
+│   ├── F1130W_pipeline.ipynb
+│   ├── F1130W_skysub.ipynb
+│   ├── F1500W_pipeline.ipynb
+│   ├── F1500W_skysub.ipynb
+│   ├── F2100W_pipeline.ipynb  # Includes column clean + Clark background
+│   └── F2100W_skysub.ipynb
+└── nircam/                    # (to be added)
 ```
 
 ## Setup
 
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/YOUR_USERNAME/SMC_GO5952_pipeline.git
-cd SMC_GO5952_pipeline
-```
-
-### 2. Create the conda environment
-
-```bash
-conda env create -f environment.yml
-conda activate jwst
-```
-
-### 3. Configure paths
-
-Each notebook has a **Configuration** cell at the top where you set:
-- `BASE_DIR` — path to your local MIRI/NIRCam data directory
-- `BKG_BASE` — For F2100W path to the Clark GO-3429 background observations
-- CRDS cache path
-
-### 4. Data
-
-The raw JWST data (uncal files) can be downloaded from [MAST](https://mast.stsci.edu/) using program ID **GO-5952**. The background observations are from program **GO-3429** (PI: C. Clark).
-
-Data is **not** included in this repository, only the pipeline code and notebooks.
+1. Clone: `git clone https://github.com/melyaj/SMC_GO5952.git`
+2. Environment: `conda env create -f environment.yml && conda activate jwst`
+3. Each notebook has a **Configuration** cell at the top — set `BASE_DIR` and CRDS paths there.
+4. Download uncal files from [MAST](https://mast.stsci.edu/) (program GO-5952). Data is not included in this repo.
 
 ## Dependencies
 
-- Python 3.11+
-- [jwst](https://github.com/spacetelescope/jwst) pipeline (v1.20+)
-- astropy
-- numpy, scipy, matplotlib
-- tweakwcs
-- CRDS (with local cache configured)
-
-See `environment.yml` for the full specification.
-
-## Note on `jwst.datamodels`
-
-The JWST pipeline uses `datamodels` instead of `astropy.io.fits` to read/write FITS files.
-It understands the JWST-specific file structure:
-
-| `datamodels` | `astropy` equivalent |
-|---|---|
-| `dm.data` | `hdul['SCI'].data` |
-| `dm.dq` | `hdul['DQ'].data` |
-| `dm.meta.wcs` | WCS with full JWST distortion model |
-| `dm.meta.wcsinfo` | WCS metadata (RA, Dec, PA, etc.) |
-
-All pipeline steps (`calwebb_detector1`, `calwebb_image2`, `calwebb_image3`) expect `datamodels` objects as input.
+Python 3.11+, jwst ≥1.20, astropy, numpy, scipy, matplotlib, tweakwcs. See `environment.yml`.
 
 ## Authors
 
-- Meriem Elyajouri (STScI)
+Meriem Elyajouri (STScI)
 
 ## Acknowledgments
 
-- Karl Gordon — pipeline resources and guidance
-- Chris Clark — dedicated background observations (GO-3429) and background subtraction strategy
-- Liz Tarantino — pipeline resources and references
+Karl Gordon — column cleaning algorithm and pipeline guidance  
+Chris Clark — dedicated background observations (GO-3429)  
+Liz Tarantino — pipeline resources and references
