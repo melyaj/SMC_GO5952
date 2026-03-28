@@ -417,26 +417,6 @@ def shift_wcs(mfile, shifts, out_suffix):
     return outfile
 
 
-def shift_cal_wcs(mfile, shifts):
-    """
-    Shift the WCS of a cal file by the input shifts in arcsec in V2, V3.
-    Saves as *_wcs_cal.fits.
-    From Karl Gordon's miri_clean.py (lines 399-426). We added .close() only.
-    """
-    image_model = datamodels.open(mfile)
-    matrix = [[1.0, 0.0], [0.0, 1.0]]  # no rotation or skew
-    wcs_corrector = JWSTgWCS(
-        wcs=image_model.meta.wcs,
-        wcsinfo=image_model.meta.wcsinfo.instance)
-    wcs_corrector.set_correction(
-        matrix=matrix, shift=shifts, ref_tpwcs=wcs_corrector)
-    image_model.meta.wcs = wcs_corrector.wcs
-    outfile = mfile.replace("_cal.fits", "_wcs_cal.fits")
-    image_model.write(outfile)
-    image_model.close()
-    return outfile
-
-
 def run_stage3(input_files, name, stage3_dir, tweakreg=False, skymatch=True,
                sky_subtract=False, outlier_det=False, pixel_scale=0.11,
                pixfrac=0.8, kernel="square", extra_steps=None):
