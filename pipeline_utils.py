@@ -2,6 +2,7 @@
 pipeline_utils.py — Shared helpers for JWST/MIRI imaging pipeline
 =================================================================
 SMC GO-5952 custom data reduction.
+Elyajouri Meriem (STScI) - 30/03/2026
 
 Usage:
     sys.path.insert(0, "..")
@@ -44,8 +45,7 @@ Functions:
 
 References:
     - Column cleaning: K. Gordon (miri_clean.py)
-    - Background field: C. Clark (GO-3429)
-    - Clark+2021, ApJ, 921, 35
+    - Background field: C. Clark (GO-3429) for F2100W only
 """
 
 import os
@@ -144,7 +144,7 @@ def plot_mosaic(data, title, filename, fig_dir=".", figsize=(12, 10),
     fig, ax = plt.subplots(1, 1, figsize=figsize, facecolor='white')
     norm = simple_norm(data, 'sqrt', percent=99)
     im = ax.imshow(data, cmap=cmap, origin='lower', norm=norm)
-    ax.set_title(title, fontsize=18, fontweight='bold', pad=10)
+    ax.set_title(title, fontsize=18, pad=10)
     ax.axis('off')
 
     if stats_txt:
@@ -156,7 +156,7 @@ def plot_mosaic(data, title, filename, fig_dir=".", figsize=(12, 10),
                       fraction=0.046, pad=0.02, shrink=0.85)
     cb.set_label('Surface brightness [MJy/sr]', fontsize=12)
     plt.tight_layout()
-    fig.savefig(f"{fig_dir}/{filename}", dpi=dpi, bbox_inches='tight', facecolor='white')
+    fig.savefig(f"{fig_dir}/{filename}", dpi=dpi, bbox_inches='tight', facecolor='none', transparent=True)
     plt.show()
 
 
@@ -164,13 +164,13 @@ def plot_comparison(data1, data2, title1, title2, filename, fig_dir=".",
                     figsize=(22, 10), cmap="afmhot", dpi=200,
                     stats1=None, stats2=None):
     """Side-by-side comparison of two mosaics."""
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize, facecolor='white')
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize, facecolor='none')
 
     for ax, data, title, stats_txt in [(ax1, data1, title1, stats1),
                                         (ax2, data2, title2, stats2)]:
         norm = simple_norm(data, 'sqrt', percent=99)
         im = ax.imshow(data, cmap=cmap, origin='lower', norm=norm)
-        ax.set_title(title, fontsize=18, fontweight='bold', pad=10)
+        ax.set_title(title, fontsize=18, pad=10)
         ax.axis('off')
         if stats_txt:
             ax.text(0.03, 0.97, stats_txt, transform=ax.transAxes, fontsize=13,
@@ -181,7 +181,7 @@ def plot_comparison(data1, data2, title1, title2, filename, fig_dir=".",
         cb.set_label('MJy/sr', fontsize=12)
 
     plt.tight_layout()
-    fig.savefig(f"{fig_dir}/{filename}", dpi=dpi, bbox_inches='tight', facecolor='white')
+    fig.savefig(f"{fig_dir}/{filename}", dpi=dpi, bbox_inches='tight', facecolor='none', transparent=True)
     plt.show()
 
 
@@ -209,11 +209,11 @@ def plot_source_catalog(stage3_dir, mosaic_data, filt, fig_dir='.', dpi=200):
     ax.scatter(bright['xcentroid'], bright['ycentroid'],
                s=30, facecolors='none', edgecolors='red', linewidths=1, alpha=0.8)
     ax.set_title(f'{filt} — Source catalog ({len(bright)} sources)',
-                 fontsize=18, fontweight='bold')
+                 fontsize=18)
     ax.axis('off')
     plt.tight_layout()
     fig.savefig(f'{fig_dir}/{filt}_source_catalog.png',
-                dpi=dpi, bbox_inches='tight', facecolor='white')
+                dpi=dpi, bbox_inches='tight', facecolor='none', transparent=True)
     plt.show()
 
 
