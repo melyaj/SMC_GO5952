@@ -508,7 +508,8 @@ def print_pipeline_summary(target, program, filt, m_ours=None,
                            lyot_row=700, lyot_col=310,
                            pixel_scale=0.11, pixfrac=1.0, kernel='square',
                            tweakreg=False, skymatch=False,
-                           sky_subtract=False, outlier_det=False):
+                           sky_subtract=False, outlier_det=False,
+                           colclean=None, cc_sigma=None, cc_exclude=None):
     """Print pipeline configuration and results."""
     line = '=' * 50
     print(line)
@@ -526,6 +527,11 @@ def print_pipeline_summary(target, program, filt, m_ours=None,
     print(f'    IPC:              {"SKIP" if ipc_skip else "ON"}')
     print(f'    Jump threshold:   {jump_threshold}σ')
     print(f'\n  Lyot flag: row>{lyot_row}, col<{lyot_col}')
+    if colclean is not None:
+        print(f'\n  Column clean:   {"ON" if colclean else "OFF"}')
+        if colclean and cc_sigma is not None:
+            print(f'    σ kernel:       {cc_sigma} px')
+            print(f'    exclude above:  {cc_exclude} MJy/sr')
     print(f'\n  Stage 3:')
     print(f'    Pixel scale:      {pixel_scale} arcsec/pix')
     print(f'    Pixfrac:          {pixfrac}')
