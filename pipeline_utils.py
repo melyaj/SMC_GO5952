@@ -16,12 +16,15 @@ Functions:
         get_stats           — Sigma-clipped median, std, % negative pixels
         stats_label         — Format stats string for plot overlay
 
-    Plotting:
-        show_miri           — Quick display of a MIRI image
+    Diagnostics/Figures:
+        show_miri           — Quick display of a MIRI image (single panel, no save)
         file_stats          — Print stats for a MIRI image with DQ mask
-        plot_mosaic         — Single mosaic with sqrt scaling + colorbar
-        plot_comparison     — Side-by-side before/after comparison
-        plot_source_catalog — Overlay source catalog on mosaic
+        plot_mosaic         — Single mosaic with sqrt scaling + colorbar + stats overlay
+                              → saves {FILT}_final.png
+        plot_comparison     — Side-by-side before/after comparison (2 panels, colorbars, stats)
+                              → saves {FILT}_comparison.png
+        plot_source_catalog — Mosaic (Greys_r) with red circles on detected sources
+                              → saves {FILT}_source_catalog.png
 
     Pipeline steps:
         run_stage1          — Run calwebb_detector1 + fix_rateints
