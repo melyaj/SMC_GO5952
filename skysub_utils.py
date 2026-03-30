@@ -23,10 +23,14 @@ Functions:
         compute_uncertainties      — Pixel noise, background level, polynomial bias
 
     Diagnostics/Figs:
-        plot_mask_overlay          — Show image with mask contours
-        plot_bg_model              — Inspect polynomial background model
-        plot_before_after          — Before/after sky subtraction comparison
-        plot_background_histogram  — Background pixel distribution vs Gaussian
+        plot_mask_overlay          — Image + cyan mask contours (2 panels)
+                                     → saves {FILT}_mask_overlay.png
+        plot_bg_model              — Polynomial model + histogram + 1D cuts (3 panels)
+                                     → saves {FILT}_bg_model.png
+        plot_before_after          — Before/after sky subtraction (2 panels, stats overlay)
+                                     → saves {FILT}_skysub_comparison.png
+        plot_background_histogram  — Background pixel distribution vs Gaussian (1 panel)
+                                     → saves {FILT}_background_histogram.png
         print_summary              — Print sky subtraction summary
 """
 
