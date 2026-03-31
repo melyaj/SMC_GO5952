@@ -400,7 +400,7 @@ def plot_background_histogram(data_sub, good_sub, filt, fig_dir='.', dpi=200):
     from scipy.stats import norm as gaussnorm
 
     bg_pixels = data_sub[good_sub]
-    pixel_noise = np.nanstd(bg_pixels)
+    _, _, pixel_noise = sigma_clipped_stats(bg_pixels, sigma=3)
 
     fig, ax = plt.subplots(figsize=(10, 6), facecolor='none')
 
