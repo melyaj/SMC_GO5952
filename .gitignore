@@ -20,3 +20,9 @@ figures/
 
 # Jupyter
 *.ipynb_checkpoints
+old/
+miri_detailed_notebooks/
+.ipynb_checkpoints/
+*.fits
+__pycache__/
+crds_cache/
