@@ -39,7 +39,6 @@ Stage 1 (detector1, snowball flagging, 1/f OFF)
   → Stage 2 (image2, no resample)
     → [F187N/F212N: per-detector equalization (refA method)]
     → Stage 3 (image3, tweakreg Gaia DR3, skymatch match subtract=False)
-    → 2D polynomial sky subtraction (filter_skysub.ipynb)
 ```
 
 Key customizations vs MAST:
@@ -60,8 +59,11 @@ Module A detectors (nrca1–nrca4) observe the SMC stellar field without signifi
 Note: tweakreg (Gaia DR3) was enabled for all filters including narrow-band.
 
 ### Sky subtraction
-
-All filters: 2D polynomial (degree 2) fitted to background pixels after masking sources (segmentation map + sigma clipping + dilation). Narrow-band filters use more aggressive masking parameters (σ=1.5, dilation=15px) to exclude diffuse line emission.
+ 
+MIRI filters: 2D polynomial (degree 2) fitted to background pixels after masking sources (segmentation map + sigma clipping + dilation). See 
+```miri/{filter}_skysub.ipynb.
+```
+NIRCam filters: no post-mosaic sky subtraction applied. The combination of skymatch (broadband) or refA equalization (narrow-band) at Stage 3 is sufficient; the NIR sky background is negligible.
 
 ## Repository structure
 
@@ -86,21 +88,13 @@ All filters: 2D polynomial (degree 2) fitted to background pixels after masking 
 │   └── F2100W_skysub.ipynb
 └── nircam/
     ├── F300M_pipeline.ipynb
-    ├── F300M_skysub.ipynb
     ├── F335M_pipeline.ipynb
-    ├── F335M_skysub.ipynb
     ├── F360M_pipeline.ipynb
-    ├── F360M_skysub.ipynb
     ├── F444W_pipeline.ipynb
-    ├── F444W_skysub.ipynb
     ├── F150W_pipeline.ipynb
-    ├── F150W_skysub.ipynb
     ├── F200W_pipeline.ipynb
-    ├── F200W_skysub.ipynb
     ├── F187N_pipeline.ipynb       # refA equalization
-    ├── F187N_skysub.ipynb
     ├── F212N_pipeline.ipynb       # refA equalization
-    └── F212N_skysub.ipynb
 ```
 
 Each notebook has a **Configuration** cell with run flags (`run_detector1`, `run_image2`, etc.) to toggle individual pipeline stages on/off.
@@ -119,8 +113,6 @@ Python 3.11+, jwst ≥ 1.20, astropy, numpy, scipy, matplotlib, photutils, repro
 ## Contributors
 
 Meriem Elyajouri (STScI)
-
-## Acknowledgments
 
 ## Acknowledgments
 
