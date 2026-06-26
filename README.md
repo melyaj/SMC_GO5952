@@ -4,7 +4,7 @@ Custom data reduction for JWST/MIRI and JWST/NIRCam imaging of SMC-SW-Bar-3.
 Program GO-5952 (PI: J. Roman-Duval), Cycle 3.  
 Proposal: https://www.stsci.edu/jwst/phase2-public/5952.pdf
 
-Last updated: March 2026
+Last updated: June 26th, 2026
 
 ## MIRI Pipeline (6 filters)
 
