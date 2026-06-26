@@ -304,31 +304,28 @@ def plot_mask_overlay(data, mask, filt, cmap='afmhot', fig_dir='.', dpi=200):
 
 
 def plot_bg_model(data, bg_model, filt, fig_dir='.', dpi=200):
-    """Inspect the polynomial background model: image, histogram, 1D cuts."""
-    fig, axes = plt.subplots(1, 3, figsize=(20, 6), facecolor='none')
+    """
+    Inspect the polynomial background model: image + 1D cuts through the center.
+    """
+    fig, axes = plt.subplots(1, 2, figsize=(15, 6), facecolor='none')
 
-    # Background model
+    # Model image
     im = axes[0].imshow(bg_model, origin='lower', cmap='RdBu_r')
-    axes[0].set_title('Polynomial Background Model', fontsize=14)
+    axes[0].set_title('Polynomial background model', fontsize=14)
     axes[0].axis('off')
     plt.colorbar(im, ax=axes[0], shrink=0.8, label='MJy/sr')
 
-    # Histogram of model values
-    axes[1].hist(bg_model[~np.isnan(data)].ravel(), bins=100,
-                 color='steelblue', edgecolor='none')
-    axes[1].set_xlabel('Model Value (MJy/sr)')
-    axes[1].set_ylabel('N pixels')
-    axes[1].set_title('Distribution of Model Values', fontsize=14)
-
-    # 1D horizontal cuts
+    # Center cuts: one horizontal, one vertical
     ny, nx = bg_model.shape
-    axes[2].plot(bg_model[ny//2, :], label=f'Row {ny//2}', alpha=0.8)
-    axes[2].plot(bg_model[ny//4, :], label=f'Row {ny//4}', alpha=0.8)
-    axes[2].plot(bg_model[3*ny//4, :], label=f'Row {3*ny//4}', alpha=0.8)
-    axes[2].set_xlabel('Column')
-    axes[2].set_ylabel('MJy/sr')
-    axes[2].set_title('Horizontal Cuts', fontsize=14)
-    axes[2].legend()
+    axes[1].plot(bg_model[ny//2, :], color='steelblue', lw=1.5,
+                 label=f'Horizontal (row {ny//2})')
+    axes[1].plot(bg_model[:, nx//2], color='darkorange', lw=1.5,
+                 label=f'Vertical (col {nx//2})')
+    axes[1].set_xlabel('Pixel')
+    axes[1].set_ylabel('Model value (MJy/sr)')
+    axes[1].set_title('1D cuts through center', fontsize=14)
+    axes[1].legend()
+    axes[1].grid(alpha=0.3)
 
     plt.tight_layout()
     fig.savefig(f'{fig_dir}/{filt}_bg_model.png',
@@ -393,60 +390,40 @@ def plot_before_after(data, data_sub, filt, poly_degree=2,
 
 def plot_background_histogram(data_sub, good_sub, filt, fig_dir='.', dpi=200):
     """
-    Background pixel histogram with Gaussian overlay.
-    Diagnostic: should be centered on 0 with values matching
-    Gaussian expectations (68.3% / 95.4% / 99.7%).
+    Histogram of residual pixels after sky subtraction.
+    Sanity check: should be centered on ~0 with approximately Gaussian shape.
     """
     from scipy.stats import norm as gaussnorm
 
     bg_pixels = data_sub[good_sub]
-    _, _, pixel_noise = sigma_clipped_stats(bg_pixels, sigma=3)
+    _, mean, std = sigma_clipped_stats(bg_pixels, sigma=3)
 
-    fig, ax = plt.subplots(figsize=(10, 6), facecolor='none')
+    fig, ax = plt.subplots(figsize=(8, 5), facecolor='none')
 
-    ax.hist(bg_pixels, bins=300, color='steelblue', edgecolor='none', alpha=0.8,
-            density=True, label='Background pixels')
+    ax.hist(bg_pixels, bins=100, color='steelblue', edgecolor='none',
+            alpha=0.8, density=True, label='Residuals')
 
-    x = np.linspace(-4*pixel_noise, 4*pixel_noise, 500)
-    ax.plot(x, gaussnorm.pdf(x, loc=0, scale=pixel_noise),
-            'r-', lw=2, label=f'Gaussian (σ={pixel_noise:.3f})')
+    x = np.linspace(-4*std, 4*std, 500)
+    ax.plot(x, gaussnorm.pdf(x, loc=0, scale=std),
+            'r-', lw=2, label=f'Gaussian (σ={std:.3f})')
 
-    for ns, alpha in [(1, 0.3), (2, 0.15), (3, 0.07)]:
-        ax.axvspan(-ns*pixel_noise, ns*pixel_noise, color='gray', alpha=alpha)
+    ax.axvline(0, color='k', ls='--', lw=1, alpha=0.6)
 
-    ax.axvline(0, color='red', ls='--', lw=1.5, label='zero')
-    ax.axvline(np.nanmean(bg_pixels), color='orange', ls='-', lw=1.5,
-               label=f'mean = {np.nanmean(bg_pixels):.4f}')
+    ax.text(0.97, 0.95,
+            f'mean = {mean:+.4f} MJy/sr\nσ = {std:.3f} MJy/sr',
+            transform=ax.transAxes, fontsize=11, va='top', ha='right',
+            family='monospace',
+            bbox=dict(boxstyle='round,pad=0.4', facecolor='white', alpha=0.85))
 
-    within_1sig = 100 * np.sum(np.abs(bg_pixels) < pixel_noise) / len(bg_pixels)
-    within_2sig = 100 * np.sum(np.abs(bg_pixels) < 2*pixel_noise) / len(bg_pixels)
-    within_3sig = 100 * np.sum(np.abs(bg_pixels) < 3*pixel_noise) / len(bg_pixels)
-    n_neg = 100 * np.sum(bg_pixels < 0) / len(bg_pixels)
-
-    stats_text = (f'σ = {pixel_noise:.3f} MJy/sr\n'
-                  f'mean = {np.nanmean(bg_pixels):.4f}\n'
-                  f'within 1σ: {within_1sig:.1f}%\n'
-                  f'within 2σ: {within_2sig:.1f}%\n'
-                  f'within 3σ: {within_3sig:.1f}%\n'
-                  f'negative: {n_neg:.1f}%')
-    ax.text(0.97, 0.95, stats_text, transform=ax.transAxes,
-            fontsize=11, va='top', ha='right', family='monospace',
-            bbox=dict(boxstyle='round,pad=0.4', facecolor='none', alpha=0.9))
-
-    ax.set_xlabel('Pixel Value (MJy/sr)', fontsize=12)
+    ax.set_xlabel('Residual pixel value (MJy/sr)', fontsize=12)
     ax.set_ylabel('Normalized density', fontsize=12)
-    ax.set_title(f'{filt} — Background pixel distribution after sky subtraction',
-                 fontsize=14)
-    ax.set_xlim(-4*pixel_noise, 4*pixel_noise)
+    ax.set_title(f'{filt} — Residuals after sky subtraction', fontsize=14)
+    ax.set_xlim(-4*std, 4*std)
     ax.legend(loc='upper left', fontsize=10)
     plt.tight_layout()
     fig.savefig(f'{fig_dir}/{filt}_background_histogram.png',
                 dpi=dpi, bbox_inches='tight', facecolor='none', transparent=True)
     plt.show()
-
-    print(f'Gaussian expectation: 68.3% within 1σ, 95.4% within 2σ, 99.7% within 3σ')
-    print(f'Our data:            {within_1sig:.1f}% within 1σ, {within_2sig:.1f}% within 2σ, {within_3sig:.1f}% within 3σ')
-
 
 def save_skysub(input_file, data_sub, bg_model, mask, header,
                 poly_degree, sigma_upper, grow_npix, segm_file=None,
