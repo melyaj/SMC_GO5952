@@ -72,4 +72,4 @@ KAPPA = 1.0  # Aniano low-pass cutoff scaling (Tarantino default)
 
 # ---------------------------------------------------------------- common grid
 # 0.11"/px north-up TAN grid, 1244x1244 (same grid as reprojected/ composite)
-GRID_REF = ROOT / "psf_matching" / "common_grid" / "F2100W_final.fits"
+GRID_REF = ROOT / "psf_matching" / "common_grid" / "grid_ref.fits"
