@@ -248,8 +248,11 @@ for band in METHODS:
             hdus.append(fits.ImageHDU(arr.astype(np.float32), header=h))
         hdus.writeto(os.path.join(OUT, band, f'{band}_pah_{name}.fits'),
                      overwrite=True)
-    FIDUCIAL = FIDUCIALS[band]
-    fid, fide = results[FIDUCIAL]
+    # neutral baseline: pixelwise median across all prescriptions
+    import numpy as _np
+    _stack = _np.stack([results[n][0] for n in METHODS[band]])
+    fid = _np.nanmedian(_stack, axis=0)
+    fide = results[list(METHODS[band])[0]][1]
     good = fid / fide > 5
     for name in METHODS[band]:
         pah, err = results[name]
@@ -293,12 +296,13 @@ for band in METHODS:
                 dpi=120, bbox_inches='tight')
     plt.close()
 
-tab = Table(rows=rows, names=['band', 'method', 'median_vs_k1', 'p16',
+tab = Table(rows=rows, names=['band', 'method', 'median_vs_ensemble', 'p16',
                               'p84', 'pct_snr3', 'reference'])
 tab.meta['comment'] = [
     'All published continuum-subtraction prescriptions applied to the',
-    'SMC GO-5952 matched maps; ratios vs the Tarantino k1 fiducial on',
-    'SNR>5 pixels. Chown+2025 beta offsets dropped (Orion-calibrated).']
+    'SMC GO-5952 matched maps; ratios vs the pixelwise ENSEMBLE MEDIAN',
+    'of all prescriptions (no fiducial), on SNR>5 pixels. Chown+2025',
+    'beta offsets dropped (Orion-calibrated).']
 tab.write(os.path.join(OUT, 'prescriptions_summary.ecsv'),
           format='ascii.ecsv', overwrite=True)
 print('\n->', OUT)
