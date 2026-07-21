@@ -24,7 +24,7 @@ from astropy.io import fits
 from astropy.convolution import convolve_fft
 
 k = fits.getdata(os.path.expanduser(
-    '~/SMC_GO5952/work/psf_match/kernels/F770W_to_F2100W_kernel.fits')).astype(float)
+    '~/SMC_GO5952/psf_matching/kernels/F770W_to_F2100W_kernel.fits')).astype(float)
 c0 = k.shape[0] // 2
 kc = k[c0-150:c0+151, c0-150:c0+151]
 kc /= kc.sum()

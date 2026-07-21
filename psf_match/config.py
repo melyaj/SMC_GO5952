@@ -53,7 +53,7 @@ def i2d_path(filt):
 ZP_TABLE = Path(__file__).parent / "zeropoint_offsets.ecsv"
 
 # ---------------------------------------------------------------- products
-PROD_DIR = ROOT / "work" / "psf_match"
+PROD_DIR = ROOT / "psf_matching"
 PSF_DIR = PROD_DIR / "psfs"
 KER_DIR = PROD_DIR / "kernels"
 CONV_DIR = PROD_DIR / "convolved"
@@ -72,4 +72,4 @@ KAPPA = 1.0  # Aniano low-pass cutoff scaling (Tarantino default)
 
 # ---------------------------------------------------------------- common grid
 # 0.11"/px north-up TAN grid, 1244x1244 (same grid as reprojected/ composite)
-GRID_REF = ROOT / "work" / "reprojected" / "F2100W_final.fits"
+GRID_REF = ROOT / "psf_matching" / "common_grid" / "F2100W_final.fits"
