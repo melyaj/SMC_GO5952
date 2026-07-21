@@ -110,25 +110,24 @@ def powerlaw_cont(g, fb, alpha, fr, eb, er):
 # ─── method registry ──────────────────────────────────────
 METHODS = {'F335M': {}, 'F770W': {}, 'F1130W': {}}
 
-# 3.3 um — a*F335M - b*F300M - c*F360M family
-for name, a, wA, wB, ref in [
-        ('lai2020',       1.000, 0.350, 0.650, 'Lai et al. 2020'),
-        ('sandstrom2023', 1.684, 0.350, 0.650, 'Sandstrom et al. 2023, ApJL 944, L7'),
-        ('whitcomb2025',  1.200, 0.380, 0.620, 'Whitcomb et al. 2025, arXiv:2509.18347'),
-        ('bolatto2024',   1.520, 0.420, 0.580, 'Bolatto et al. 2024 (per W25 Table 1)'),
-        ('lininterp',     1.000, 0.410, 0.590, 'pivot-wavelength interpolation')]:
+# 3.3 um — unified form of Elyajouri et al. Paper I, Eq. 3 / Table 2:
+# PAH = alpha * [F335M - (1-beta)*F300M - beta*F360M]
+for name, alpha, beta, ref in [
+        ('L20', 1.00, 0.65, 'Lai et al. 2020 (AKARI/IRS calibration)'),
+        ('C25', 1.00, 0.00, 'Chown et al. 2025 (F335M-F300M, Orion Bar)'),
+        ('T25', 1.40, 0.59, 'Tarantino et al. 2025 (k=2.07 PAHfit)'),
+        ('W25', 1.20, 0.62, 'Whitcomb et al. 2025 (mean L20/T25, adopted)'),
+        ('S23', 1.68, 0.65, 'Sandstrom et al. 2023 (PHANGS color-color)'),
+        ('B24', 1.52, 0.58, 'Bolatto et al. 2024 (F300M-recal. per W25)'),
+        ('lininterp_geo', 1.00, 0.587, 'pivot interpolation (beta_geo, Paper I)')]:
     METHODS['F335M'][name] = dict(
-        kind='lin', a=a, b=a * wA, c=a * wB,
-        formula=f'{a:.3f}*(F335M - {wA:.2f}*F300M - {wB:.2f}*F360M)', ref=ref)
-METHODS['F335M']['tarantino_k1'] = dict(kind='k', trio=('F300M', 'F335M', 'F360M'),
-                                        contam='up', k=2.07, kerr=0.30,
-                                        formula='k-method k=2.07+/-0.30',
-                                        ref='Tarantino et al. 2025 (k1, PAHFIT)')
-METHODS['F335M']['tarantino_k2'] = dict(kind='k', trio=('F300M', 'F335M', 'F360M'),
-                                        contam='up', k=4.45, kerr=0.39,
-                                        formula='k-method k=4.45+/-0.39',
-                                        ref='Tarantino et al. 2025 (k2, polyfit)')
-
+        kind='lin', a=alpha, b=alpha * (1 - beta), c=alpha * beta,
+        formula=f'{alpha:.2f}*(F335M - {1-beta:.2f}*F300M - {beta:.2f}*F360M)',
+        ref=ref)
+METHODS['F335M']['T25_k2'] = dict(kind='k', trio=('F300M', 'F335M', 'F360M'),
+                                  contam='up', k=4.45, kerr=0.39,
+                                  formula='k-method k=4.45+/-0.39',
+                                  ref='Tarantino et al. 2025 (k2, polyfit)')
 # 7.7 um
 METHODS['F770W'] = {
     'tarantino_k1': dict(kind='k', trio=('F560W', 'F770W', 'F1000W'),
@@ -231,7 +230,7 @@ def compute(band, name, m):
 
 
 rows = []
-FIDUCIAL = 'tarantino_k1'
+FIDUCIALS = {'F335M': 'T25', 'F770W': 'tarantino_k1', 'F1130W': 'tarantino_k1'}
 for band in METHODS:
     os.makedirs(os.path.join(OUT, band), exist_ok=True)
     results = {}
@@ -249,6 +248,7 @@ for band in METHODS:
             hdus.append(fits.ImageHDU(arr.astype(np.float32), header=h))
         hdus.writeto(os.path.join(OUT, band, f'{band}_pah_{name}.fits'),
                      overwrite=True)
+    FIDUCIAL = FIDUCIALS[band]
     fid, fide = results[FIDUCIAL]
     good = fid / fide > 5
     for name in METHODS[band]:
