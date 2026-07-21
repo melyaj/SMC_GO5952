@@ -50,13 +50,19 @@ NIRCam: no post-mosaic sky subtraction (see [A]).
 |---|---|---|
 | `psf_match/00_subtract_zeropoint.py` + `psf_match/zeropoint_offsets.ecsv` | MIRI `*_i2d_skysub.fits`, NIRCam `*_i2d.fits` | `*_zp.fits` (SCI − ZPOFF; ZPOFF/ZPSYS in headers) |
 
-Astrometric registration: after PSF matching validation, all bands are
-registered to the Gaia (NIRCam/F150W) frame by per-filter CRVAL
-corrections (psf_match/11_register_astrometry.py, table
-astrometric_offsets.ecsv): the F560W-anchored MIRI tweakreg was
-internally consistent to +/-15 mas, the MIRI group floated ~45 mas vs
-Gaia, F2100W by an extra 30-70 mas. Post-registration: all bands agree
-to <=44 mas (<=7% of the beam).
+Astrometric registration: after PSF matching, all bands are registered
+to the Gaia (NIRCam) frame. Final solution = GLOBAL weighted
+least-squares over the 87 pairwise differential offsets
+(psf_match/13_global_registration.py; S/N>6 stars per pair; NIRCam mean
+anchored to Gaia; supersedes the incremental steps 11/12). Two
+methodological rules: measure offsets only with stars of high S/N in
+the band being measured (faint-star centroids regress toward the
+reference position, diluting offsets up to x3), and close the system
+globally (adjacent-band differentials are ~3x more precise than
+band-vs-reference). Corrections = CRVAL updates (no resampling),
+cumulative ASTCORR keywords in headers, tables
+astrometric_{offsets,offsets_v2,global}.ecsv. Final state: all 14
+bands within 2.4 mas (F1500W 4.4), pair residuals <= 1.6 sigma.
 
 Offsets = 3σ-clipped medians in a dark reference cavity common to all
 14 bands (measured on the matched maps; constants commute with
