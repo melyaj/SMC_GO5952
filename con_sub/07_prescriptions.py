@@ -112,22 +112,18 @@ METHODS = {'F335M': {}, 'F770W': {}, 'F1130W': {}}
 
 # 3.3 um — unified form of Elyajouri et al. Paper I, Eq. 3 / Table 2:
 # PAH = alpha * [F335M - (1-beta)*F300M - beta*F360M]
+# ADOPTED WORKING SET (Meriem, 2026-07-23): L20 (aromatic 3.3, best when
+# 3.4 is faint), W25 (adopted compromise), S23 (total PAH-dust-correlated
+# in-band emission). Other Table 2 prescriptions (C25, T25, B24, T25_k2,
+# lininterp_geo) can be re-enabled here if needed for benchmarks.
 for name, alpha, beta, ref in [
-        ('L20', 1.00, 0.65, 'Lai et al. 2020 (AKARI/IRS calibration)'),
-        ('C25', 1.00, 0.00, 'Chown et al. 2025 (F335M-F300M, Orion Bar)'),
-        ('T25', 1.40, 0.59, 'Tarantino et al. 2025 (k=2.07 PAHfit)'),
-        ('W25', 1.20, 0.62, 'Whitcomb et al. 2025 (mean L20/T25, adopted)'),
-        ('S23', 1.68, 0.65, 'Sandstrom et al. 2023 (PHANGS color-color)'),
-        ('B24', 1.52, 0.58, 'Bolatto et al. 2024 (F300M-recal. per W25)'),
-        ('lininterp_geo', 1.00, 0.587, 'pivot interpolation (beta_geo, Paper I)')]:
+        ('L20', 1.00, 0.65, 'Lai et al. 2020 (aromatic 3.3)'),
+        ('W25', 1.20, 0.62, 'Whitcomb et al. 2025 (adopted mean)'),
+        ('S23', 1.68, 0.65, 'Sandstrom et al. 2023 (PAH-correlated total)')]:
     METHODS['F335M'][name] = dict(
         kind='lin', a=alpha, b=alpha * (1 - beta), c=alpha * beta,
         formula=f'{alpha:.2f}*(F335M - {1-beta:.2f}*F300M - {beta:.2f}*F360M)',
         ref=ref)
-METHODS['F335M']['T25_k2'] = dict(kind='k', trio=('F300M', 'F335M', 'F360M'),
-                                  contam='up', k=4.45, kerr=0.39,
-                                  formula='k-method k=4.45+/-0.39',
-                                  ref='Tarantino et al. 2025 (k2, polyfit)')
 # 7.7 um
 METHODS['F770W'] = {
     'tarantino_k1': dict(kind='k', trio=('F560W', 'F770W', 'F1000W'),
