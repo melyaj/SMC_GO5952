@@ -18,7 +18,7 @@ from astropy.io import fits
 FILTERS = ['F150W', 'F187N', 'F200W', 'F212N', 'F300M', 'F335M', 'F360M',
            'F444W', 'F560W', 'F770W', 'F1000W', 'F1130W', 'F1500W', 'F2100W']
 NEW = os.path.expanduser('~/SMC_GO5952/products/matched')
-OLD = os.path.expanduser('~/SMC_GO5952/analysis_ready/zp')
+OLD = os.path.expanduser('~/SMC_GO5952/archive/analysis_ready_DEPRECATED_20260722/zp')
 
 print('filtre   max|dSCI| (MJy/sr)  max|dERR|   NaN identiques')
 ok = True

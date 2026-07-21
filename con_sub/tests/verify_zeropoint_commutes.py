@@ -24,13 +24,13 @@ from astropy.io import fits
 from astropy.convolution import convolve_fft
 
 k = fits.getdata(os.path.expanduser(
-    '~/SMC_GO5952/psf_match/kernels/F770W_to_F2100W_kernel.fits')).astype(float)
+    '~/SMC_GO5952/work/psf_match/kernels/F770W_to_F2100W_kernel.fits')).astype(float)
 c0 = k.shape[0] // 2
 kc = k[c0-150:c0+151, c0-150:c0+151]
 kc /= kc.sum()
 
 img = fits.getdata(os.path.expanduser(
-    '~/SMC_GO5952/analysis_ready/F770W_matchedF2100W.fits'), 'SCI')
+    '~/SMC_GO5952/products/matched/F770W_matchedF2100W.fits'), 'SCI')
 cut = img[200:1000, 200:1000].astype(float)
 c = 0.1034     # F770W zero-point offset (MJy/sr)
 
