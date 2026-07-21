@@ -55,7 +55,7 @@ from astropy.table import Table
 MATCHED = os.path.expanduser('~/SMC_GO5952/products/matched')
 OUT = os.path.expanduser('~/SMC_GO5952/products/pah/prescriptions')
 
-PIVOT = {'F300M': 2.996, 'F335M': 3.365, 'F360M': 3.621,
+PIVOT = {'F300M': 2.996, 'F335M': 3.365, 'F360M': 3.621, 'F444W': 4.404,
          'F560W': 5.635, 'F770W': 7.639, 'F1000W': 9.953,
          'F1130W': 11.309, 'F1500W': 15.064}
 
@@ -112,17 +112,25 @@ METHODS = {'F335M': {}, 'F770W': {}, 'F1130W': {}}
 
 # 3.3 um — unified form of Elyajouri et al. Paper I, Eq. 3 / Table 2:
 # PAH = alpha * [F335M - (1-beta)*F300M - beta*F360M]
-# ADOPTED WORKING SET (Meriem, 2026-07-23): L20 (aromatic 3.3, best when
-# 3.4 is faint), W25 (adopted compromise), S23 (total PAH-dust-correlated
-# in-band emission). Other Table 2 prescriptions (C25, T25, B24, T25_k2,
-# lininterp_geo) can be re-enabled here if needed for benchmarks.
-for name, alpha, beta, ref in [
-        ('L20', 1.00, 0.65, 'Lai et al. 2020 (aromatic 3.3)'),
-        ('W25', 1.20, 0.62, 'Whitcomb et al. 2025 (adopted mean)'),
-        ('S23', 1.68, 0.65, 'Sandstrom et al. 2023 (PAH-correlated total)')]:
+# ADOPTED F335M SET (Meriem, 2026-07-23):
+#   L20  — aromatic 3.3 (best when 3.4 is faint)
+#   W25  — adopted compromise (3.3+3.4)
+#   S23  — total PAH-dust-correlated in-band emission
+#   T25  — PDRs4All PAHfit k=2.07 (as used in Paper I; NOT the D21 k2)
+#   B24  — F300M-recalibrated form (per W25)
+#   E26  — Paper I recommendation: F300M+F335M+F444W, alpha=1.25+/-0.06
+#          (combined 3.3+3.4-3.46; most universal, Table 4)
+for name, alpha, beta, blue, red, ref in [
+        ('L20', 1.00, 0.650, 'F300M', 'F360M', 'Lai et al. 2020 (aromatic 3.3)'),
+        ('W25', 1.20, 0.620, 'F300M', 'F360M', 'Whitcomb et al. 2025 (adopted mean)'),
+        ('S23', 1.68, 0.650, 'F300M', 'F360M', 'Sandstrom et al. 2023 (PAH-correlated total)'),
+        ('T25', 1.40, 0.590, 'F300M', 'F360M', 'Tarantino et al. 2025 (PDRs4All PAHfit k=2.07)'),
+        ('B24', 1.52, 0.580, 'F300M', 'F360M', 'Bolatto et al. 2024 (F300M-recalibrated)'),
+        ('E26', 1.25, 0.264, 'F300M', 'F444W', 'Elyajouri et al. Paper I (F444W anchor, combined)')]:
     METHODS['F335M'][name] = dict(
         kind='lin', a=alpha, b=alpha * (1 - beta), c=alpha * beta,
-        formula=f'{alpha:.2f}*(F335M - {1-beta:.2f}*F300M - {beta:.2f}*F360M)',
+        blue=blue, red=red,
+        formula=f'{alpha:.2f}*(F335M - {1-beta:.3f}*{blue} - {beta:.3f}*{red})',
         ref=ref)
 # 7.7 um
 METHODS['F770W'] = {
@@ -182,8 +190,8 @@ def compute(band, name, m):
         return kmethod(m['trio'], m['contam'], m['k'], m['kerr'])
     if m['kind'] == 'lin':
         f2, e2, _ = bands['F335M']
-        fb, eb, _ = bands['F300M']
-        fr, er, _ = bands['F360M']
+        fb, eb, _ = bands[m.get('blue', 'F300M')]
+        fr, er, _ = bands[m.get('red', 'F360M')]
         return lincombo(m['a'], m['b'], m['c'], f2, fb, fr, e2, eb, er)
     if m['kind'] == 'lin770':
         f2, e2, _ = bands['F770W']

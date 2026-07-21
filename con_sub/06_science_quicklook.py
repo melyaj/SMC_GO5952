@@ -43,7 +43,10 @@ def zp_map(f):
 
 
 def pah_map(f):
-    with fits.open(os.path.join(PAH, f'{f}_pah.fits')) as h:
+    # adopted 3.3 prescription: L20 (Meriem 2026-07-23)
+    path = (os.path.join(PAH, 'prescriptions', 'F335M', 'F335M_pah_L20.fits')
+            if f == 'F335M' else os.path.join(PAH, f'{f}_pah.fits'))
+    with fits.open(path) as h:
         return h['PAH'].data.astype(float), h['PAH_ERR'].data.astype(float)
 
 

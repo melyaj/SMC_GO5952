@@ -36,9 +36,15 @@ SNR_CUT = 3.0
 BANDS = {'3.3': 'F335M', '7.7': 'F770W', '11.3': 'F1130W'}
 RATIOS = [('3.3', '11.3'), ('7.7', '11.3'), ('3.3', '7.7')]
 
+# adopted 3.3 prescription (Meriem 2026-07-23): L20 (aromatic feature)
+PRESC33 = os.path.join(PAH_DIR, 'prescriptions', 'F335M', 'F335M_pah_L20.fits')
+
+def _pah_path(band, filt):
+    return PRESC33 if band == '3.3' else os.path.join(PAH_DIR, f'{filt}_pah.fits')
+
 pah, err, hdr = {}, {}, {}
 for band, filt in BANDS.items():
-    with fits.open(os.path.join(PAH_DIR, f'{filt}_pah.fits')) as h:
+    with fits.open(_pah_path(band, filt)) as h:
         pah[band] = h['PAH'].data.astype(float)
         err[band] = h['PAH_ERR'].data.astype(float)
         hdr[band] = h['PAH'].header
