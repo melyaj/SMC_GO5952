@@ -55,7 +55,7 @@ from astropy.table import Table
 MATCHED = os.path.expanduser('~/SMC_GO5952/products/matched')
 OUT = os.path.expanduser('~/SMC_GO5952/products/pah/prescriptions')
 
-PIVOT = {'F300M': 2.996, 'F335M': 3.365, 'F360M': 3.621, 'F444W': 4.404,
+PIVOT = {'F200W': 1.990, 'F300M': 2.996, 'F335M': 3.365, 'F360M': 3.621, 'F444W': 4.404,
          'F560W': 5.635, 'F770W': 7.639, 'F1000W': 9.953,
          'F1130W': 11.309, 'F1500W': 15.064}
 
@@ -153,6 +153,18 @@ METHODS['F770W'] = {
                                 blue='F560W', red='F1000W', alpha=0.53,
                                 formula='F770W - 0.91*F560W^0.47*F1000W^0.53',
                                 ref='Donnelly et al. 2025'),
+    'gregg2025': dict(kind='chown', band='F770W', bsub='F560W', coef=1.00,
+                      formula='F770W - F560W (unscaled)',
+                      ref='Gregg et al. 2025 (FEAST)'),
+    'appleton2023': dict(kind='chown', band='F770W', bsub='F1500W', coef=0.90,
+                         formula='F770W - 0.9*F1500W (IRS slope)',
+                         ref='Appleton et al. 2023 (Stephan Quintet)'),
+    'sutter2024_star': dict(kind='chown', band='F770W', bsub='F200W', coef=0.13,
+                            formula='F770W - 0.13*F200W (starlight only)',
+                            ref='Sutter et al. 2024 (PHANGS Cy1)'),
+    'egorov2025_star': dict(kind='chown', band='F770W', bsub='F300M', coef=0.22,
+                            formula='F770W - 0.22*F300M (starlight only)',
+                            ref='Egorov et al. 2025 (PHANGS Cy2)'),
     'chown2025': dict(kind='chown', band='F770W', bsub='F1000W', coef=1.14,
                       formula='F770W - 1.14*F1000W (PDR regime; no offset)',
                       ref='Chown et al. 2025 (PDRs4All XIII)'),
@@ -174,6 +186,9 @@ METHODS['F1130W'] = {
     'donnelly2025': dict(kind='don113',
                          formula='two-branch silicate (S_sil threshold -0.6)',
                          ref='Donnelly et al. 2025'),
+    'raw_inband': dict(kind='chown', band='F1130W', bsub='F1000W', coef=0.00,
+                       formula='F1130W as-is (in-band; >93% PAH per Baron+25)',
+                       ref='PHANGS de facto (Baron et al. 2025)'),
     'chown2025_F1000W': dict(kind='chown', band='F1130W', bsub='F1000W',
                              coef=1.00,
                              formula='F1130W - 1.00*F1000W (no offset)',
@@ -274,24 +289,22 @@ for band in METHODS:
     # comparison figure: histogram of method/fiducial + map of most deviant
     fig, axes = plt.subplots(1, 2, figsize=(15, 5.5))
     for name in METHODS[band]:
-        if name == FIDUCIAL:
-            continue
         r = results[name][0][good] / fid[good]
         axes[0].hist(r[np.isfinite(r)], bins=120, range=(0.3, 1.7),
                      histtype='step', lw=1.6, density=True, label=name)
     axes[0].axvline(1, color='k', ls=':')
-    axes[0].set_xlabel(f'PAH({band}, methode) / PAH(k1)')
+    axes[0].set_xlabel(f'PAH({band}, method) / ensemble median')
     axes[0].legend(fontsize=8)
     axes[0].set_yticks([])
     devs = {n: abs(np.nanmedian(results[n][0][good] / fid[good]) - 1)
-            for n in METHODS[band] if n != FIDUCIAL}
+            for n in METHODS[band]}
     worst = max(devs, key=devs.get)
     with np.errstate(invalid='ignore'):
         rmap = np.where(good, results[worst][0] / fid, np.nan)
     im = axes[1].imshow(rmap, origin='lower', cmap='RdBu_r',
                         vmin=0.5, vmax=1.5)
     plt.colorbar(im, ax=axes[1], fraction=0.046)
-    axes[1].set_title(f'{worst} / k1 (carte)')
+    axes[1].set_title(f'{worst} / ensemble median (map)')
     axes[1].set_xticks([]); axes[1].set_yticks([])
     axes[1].set_facecolor('0.85')
     fig.suptitle(f'{band}: comparaison des prescriptions (px SNR>5)', fontsize=13)
