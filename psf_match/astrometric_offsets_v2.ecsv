@@ -11,7 +11,9 @@
 # - {name: dCRVAL2_deg, datatype: float64}
 # meta: !!omap
 # - comment: ['v2 dilution-free offsets vs F150W (Gaia): high-SNR stars only', '(peak SNR>8 per band, fallback >5). Corrections applied
-#       only when', '|offset| > max(2 err, 15 mas). Cumulative with step 11.']
+#       only when', '|offset| > max(2 err, 15 mas). Cumulative with step 11.', 'POST-HOC (2026-07-23): F1130W additionally shifted by
+#       (-22, 0) mas sky', 'to register it to its MIRI trio (F1130W-F1500W was +23+/-5 mas, 4.6 sigma,', caught by eye in the blink; MIRI-differential
+#       measurements are ~3x more, precise than each-vs-F150W). Cumulative ASTCORR in file headers is truth.]
 # schema: astropy-2.0
 filter nstars dx_mas dy_mas err_mas significant dCRVAL1_deg dCRVAL2_deg
 F150W 0 0.0 0.0 0.0 False 0.0 0.0
