@@ -21,8 +21,8 @@ Prescription (all degree-1 homogeneous -> valid on MJy/sr maps):
         S >= -0.6: cont = F1000W^(1-a) F1500W^a, a=0.31, g=1
         S <  -0.6: f10 -> 0.94 F1000W^1.20 F560W^-0.08 F1500W^-0.12
 
-Outputs: analysis_ready/pah/alternatives/donnelly_comparison.png
-         analysis_ready/pah/alternatives/{F770W,F1130W}_pah_donnelly.fits
+Outputs: products/pah/alternatives/donnelly_comparison.png
+         products/pah/alternatives/{F770W,F1130W}_pah_donnelly.fits
 
 Usage: conda activate jwst && python 04b_donnelly.py
 """
@@ -35,13 +35,13 @@ import matplotlib.pyplot as plt
 
 from astropy.io import fits
 
-ZP  = os.path.expanduser('~/SMC_GO5952/analysis_ready/zp')
-PAH = os.path.expanduser('~/SMC_GO5952/analysis_ready/pah')
+ZP  = os.path.expanduser('~/SMC_GO5952/products/matched')
+PAH = os.path.expanduser('~/SMC_GO5952/products/pah')
 OUT = os.path.join(PAH, 'alternatives')
 
 
 def zp_map(f):
-    return fits.getdata(os.path.join(ZP, f'{f}_matchedF2100W_zp.fits'),
+    return fits.getdata(os.path.join(ZP, f'{f}_matchedF2100W.fits'),
                         'SCI').astype(float)
 
 
@@ -79,7 +79,7 @@ print(f'S_sil,phot: median = {np.nanmedian(s_sil):.3f}, '
 
 for name, arr in [('F770W_pah_donnelly', pah77_don),
                   ('F1130W_pah_donnelly', pah113_don)]:
-    hdr = fits.getheader(os.path.join(ZP, 'F770W_matchedF2100W_zp.fits'),
+    hdr = fits.getheader(os.path.join(ZP, 'F770W_matchedF2100W.fits'),
                          'SCI')
     fits.writeto(os.path.join(OUT, f'{name}.fits'),
                  arr.astype(np.float32), header=hdr, overwrite=True)

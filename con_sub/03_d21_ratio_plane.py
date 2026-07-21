@@ -20,10 +20,10 @@ the paper version.
 
 Diagnostic plane: x = 7.7/11.3 (ionization), y = 3.3/11.3 (size).
 
-Inputs : analysis_ready/pah/ratio_{33_113,77_113}.fits
+Inputs : products/pah/ratio_{33_113,77_113}.fits
          models/Draine2021/BC03_Z0.0004_10Myr/pahspec.out_*.gz
-Outputs: analysis_ready/pah/d21_ratio_plane.png
-         analysis_ready/pah/d21_model_ratios.ecsv
+Outputs: products/pah/d21_ratio_plane.png
+         products/pah/d21_model_ratios.ecsv
 
 Usage: conda activate jwst && python 03_d21_ratio_plane.py
 """
@@ -42,7 +42,7 @@ from astropy.table import Table
 D21_DIR = os.path.expanduser(
     '~/SMC_GO5952/models/Draine2021/BC03_Z0.0004_10Myr')
 STPSF   = os.path.expanduser('~/data/stpsf-data')
-PAH_DIR = os.path.expanduser('~/SMC_GO5952/analysis_ready/pah')
+PAH_DIR = os.path.expanduser('~/SMC_GO5952/products/pah')
 
 PAH_FILTERS = {'3.3': ('NIRCam', 'F335M'), '7.7': ('MIRI', 'F770W'),
                '11.3': ('MIRI', 'F1130W')}

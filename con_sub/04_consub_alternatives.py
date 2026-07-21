@@ -17,9 +17,9 @@ k1 values of Tarantino+2025):
            to her PAHFIT k)  [placeholder until the exact prescription
            from the literature agents is integrated]
 
-Outputs: analysis_ready/pah/alternatives/{filt}_pah_{method}.fits
-         analysis_ready/pah/alternatives/consub_method_comparison.png
-         analysis_ready/pah/alternatives/consub_method_stats.ecsv
+Outputs: products/pah/alternatives/{filt}_pah_{method}.fits
+         products/pah/alternatives/consub_method_comparison.png
+         products/pah/alternatives/consub_method_stats.ecsv
 
 Usage: conda activate jwst && python 04_consub_alternatives.py
 """
@@ -43,8 +43,8 @@ exec(src[src.index('def get_pah_low'):src.index('# ─── I/O helpers')],
      mod.__dict__)
 get_pah_low, get_pah_up = mod.get_pah_low, mod.get_pah_up
 
-ZP_DIR  = os.path.expanduser('~/SMC_GO5952/analysis_ready/zp')
-PAH_DIR = os.path.expanduser('~/SMC_GO5952/analysis_ready/pah')
+ZP_DIR  = os.path.expanduser('~/SMC_GO5952/products/matched')
+PAH_DIR = os.path.expanduser('~/SMC_GO5952/products/pah')
 OUT_DIR = os.path.join(PAH_DIR, 'alternatives')
 os.makedirs(OUT_DIR, exist_ok=True)
 
@@ -62,7 +62,7 @@ K2 = {'3.3': (4.45, 0.39), '7.7': (5.84, 0.73), '11.3': (10.17, 1.24)}
 
 
 def load_band(filt):
-    path = os.path.join(ZP_DIR, f'{filt}_matchedF2100W_zp.fits')
+    path = os.path.join(ZP_DIR, f'{filt}_matchedF2100W.fits')
     with fits.open(path) as hdu:
         sci = hdu['SCI'].data.astype(float)
         err = np.sqrt(hdu['ERR'].data.astype(float) ** 2 +

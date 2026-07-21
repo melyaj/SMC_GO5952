@@ -15,9 +15,9 @@ Pixels are kept where BOTH bands have SNR > SNR_CUT (this also rejects
 the over-subtracted cores of bright compact sources, which go negative).
 Ratio uncertainty: err = R * sqrt((eA/A)^2 + (eB/B)^2).
 
-Inputs : analysis_ready/pah/{F335M,F770W,F1130W}_pah.fits
-Outputs: analysis_ready/pah/ratio_{name}.fits  (RATIO, RATIO_ERR)
-         analysis_ready/pah/band_ratios_summary.png
+Inputs : products/pah/{F335M,F770W,F1130W}_pah.fits
+Outputs: products/pah/ratio_{name}.fits  (RATIO, RATIO_ERR)
+         products/pah/band_ratios_summary.png
 
 Usage: conda activate jwst && python 02_band_ratios.py
 """
@@ -30,7 +30,7 @@ import matplotlib.pyplot as plt
 
 from astropy.io import fits
 
-PAH_DIR = os.path.expanduser('~/SMC_GO5952/analysis_ready/pah')
+PAH_DIR = os.path.expanduser('~/SMC_GO5952/products/pah')
 SNR_CUT = 3.0
 
 BANDS = {'3.3': 'F335M', '7.7': 'F770W', '11.3': 'F1130W'}

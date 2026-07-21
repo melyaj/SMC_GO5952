@@ -17,7 +17,7 @@ v0 quicklooks:
    the pixel-based version of Tarantino's clump correlations with
    Halpha (she found rho_sp = 0.61 for 3.3/11.3, none for 7.7/11.3).
 
-Outputs: analysis_ready/science/  (FITS + PNG + stats)
+Outputs: products/science/  (FITS + PNG + stats)
 
 Usage: conda activate jwst && python 06_science_quicklook.py
 """
@@ -31,14 +31,14 @@ import matplotlib.pyplot as plt
 from astropy.io import fits
 from scipy import stats as sstats
 
-ZP  = os.path.expanduser('~/SMC_GO5952/analysis_ready/zp')
-PAH = os.path.expanduser('~/SMC_GO5952/analysis_ready/pah')
-OUT = os.path.expanduser('~/SMC_GO5952/analysis_ready/science')
+ZP  = os.path.expanduser('~/SMC_GO5952/products/matched')
+PAH = os.path.expanduser('~/SMC_GO5952/products/pah')
+OUT = os.path.expanduser('~/SMC_GO5952/products/science')
 os.makedirs(OUT, exist_ok=True)
 
 
 def zp_map(f):
-    return fits.getdata(os.path.join(ZP, f'{f}_matchedF2100W_zp.fits'),
+    return fits.getdata(os.path.join(ZP, f'{f}_matchedF2100W.fits'),
                         'SCI').astype(float)
 
 
@@ -47,7 +47,7 @@ def pah_map(f):
         return h['PAH'].data.astype(float), h['PAH_ERR'].data.astype(float)
 
 
-hdr = fits.getheader(os.path.join(ZP, 'F770W_matchedF2100W_zp.fits'), 'SCI')
+hdr = fits.getheader(os.path.join(ZP, 'F770W_matchedF2100W.fits'), 'SCI')
 
 p33, e33 = pah_map('F335M')
 p77, e77 = pah_map('F770W')

@@ -18,12 +18,12 @@ Differences vs Tarantino+2025:
   - per-pixel ERR maps (propagated through PSF matching) instead of a
     single empirical RMS; the zero-point systematic ZPSYS of each band
     is added in quadrature to its ERR map before propagation.
-  - inputs are the zero-point homogenized maps (analysis_ready/zp/).
+  - inputs are the zero-point homogenized maps (products/matched/).
 
-Inputs : analysis_ready/zp/{filt}_matchedF2100W_zp.fits (SCI, ERR)
-Outputs: analysis_ready/pah/{filt}_pah.fits  (PAH, PAH_ERR, CON, SLOPE)
-         analysis_ready/pah/pah_maps_summary.png
-         analysis_ready/pah/{filt}_pah_diagnostic.png
+Inputs : products/matched/{filt}_matchedF2100W.fits (SCI, ERR)
+Outputs: products/pah/{filt}_pah.fits  (PAH, PAH_ERR, CON, SLOPE)
+         products/pah/pah_maps_summary.png
+         products/pah/{filt}_pah_diagnostic.png
 
 Usage: conda activate jwst && python 01_consub_kmethod.py
 """
@@ -39,8 +39,8 @@ from astropy.stats import sigma_clipped_stats
 from astropy.visualization import simple_norm
 
 # ─── Configuration ────────────────────────────────────────
-ZP_DIR  = os.path.expanduser('~/SMC_GO5952/analysis_ready/zp')
-OUT_DIR = os.path.expanduser('~/SMC_GO5952/analysis_ready/pah')
+ZP_DIR  = os.path.expanduser('~/SMC_GO5952/products/matched')
+OUT_DIR = os.path.expanduser('~/SMC_GO5952/products/pah')
 
 # pivot wavelengths [um], JDox (only beta = (l2-l1)/(l3-l1) matters)
 PIVOT = {'F300M': 2.996, 'F335M': 3.365, 'F360M': 3.621,
@@ -108,7 +108,7 @@ def get_pah_up(f1, f2, f3, l1, l2, l3, k, e1, e2, e3, k_err):
 
 # ─── I/O helpers ──────────────────────────────────────────
 def load_band(filt):
-    path = os.path.join(ZP_DIR, f'{filt}_matchedF2100W_zp.fits')
+    path = os.path.join(ZP_DIR, f'{filt}_matchedF2100W.fits')
     with fits.open(path) as hdu:
         sci = hdu['SCI'].data
         err = hdu['ERR'].data

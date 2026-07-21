@@ -59,6 +59,12 @@ def reproject_filter(filt, targ_head, targ_wcs, shape_out):
     head["BUNIT"] = "MJy/sr"
     head["FILTER"] = filt
     head["TARGPSF"] = (TARGET, "PSF-matched to this filter")
+    # carry the zero-point keywords from the mosaic (00_subtract_zeropoint)
+    with fits.open(i2d_path(filt)) as hdul_zp:
+        for key in ("ZPOFF", "ZPSYS"):
+            if key in hdul_zp["SCI"].header:
+                head[key] = (hdul_zp["SCI"].header[key],
+                             hdul_zp["SCI"].header.comments[key])
     head["HISTORY"] = provenance
     head["HISTORY"] = "reproject_adaptive onto reprojected/F2100W_final.fits grid"
     hdul_out = fits.HDUList([

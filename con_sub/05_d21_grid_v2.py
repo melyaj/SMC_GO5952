@@ -20,8 +20,8 @@ to when the data are continuum-subtracted with the k-method; the v1
 grid (direct PAH photometry) is kept for comparison. The difference
 between the grids quantifies the con-sub systematic on the model side.
 
-Outputs: analysis_ready/pah/d21_model_ratios_v2.ecsv
-         analysis_ready/pah/d21_ratio_plane_v2.png
+Outputs: products/pah/d21_model_ratios_v2.ecsv
+         products/pah/d21_ratio_plane_v2.png
 
 Usage: conda activate jwst && python 05_d21_grid_v2.py
 """
@@ -39,7 +39,7 @@ from astropy.table import Table
 D21_DIR = os.path.expanduser(
     '~/SMC_GO5952/models/Draine2021/BC03_Z0.0004_10Myr')
 STPSF   = os.path.expanduser('~/data/stpsf-data')
-PAH_DIR = os.path.expanduser('~/SMC_GO5952/analysis_ready/pah')
+PAH_DIR = os.path.expanduser('~/SMC_GO5952/products/pah')
 
 INST = {'F300M': 'NIRCam', 'F335M': 'NIRCam', 'F360M': 'NIRCam',
         'F560W': 'MIRI', 'F770W': 'MIRI', 'F1000W': 'MIRI',
