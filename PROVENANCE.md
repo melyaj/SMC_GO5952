@@ -9,12 +9,15 @@ MAST raw (GO-5952)
    │  [A] per-filter reduction notebooks
    ▼
 01_stage3/                      {miri,nircam}_{FILT}_final_i2d.fits
-   │  [B] sky subtraction (MIRI) + [C] zero-point constants (all 14)
+   │  [B] sky subtraction (MIRI)
    ▼
-02_stage3_bkgsub/               *_skysub_zp.fits (MIRI), *_zp.fits (NIRCam)
+02_stage3_skysub/               *_skysub.fits (MIRI only; NIRCam unchanged)
+   │  [C] zero-point constants (all 14)
+   ▼
+03_stage3_zeropoint/            *_skysub_zp.fits (MIRI), *_zp.fits (NIRCam)
    │  [D] PSF matching + reprojection
    ▼
-03_psf_matched_science_ready/   {FILT}_matchedF2100W.fits
+04_psf_matched_science_ready/   {FILT}_matchedF2100W.fits
    │  [E] continuum subtraction & analysis (preliminary)
    ▼
 derived_preliminary/            pah/, science/
@@ -30,7 +33,7 @@ derived_preliminary/            pah/, science/
 
 Shared helpers: `pipeline_utils.py`, `nircam_pipeline_utils.py`.
 
-## [B] 01 → 02, part 1: MIRI 2D sky subtraction (one notebook per filter)
+## [B] 01 → 02: MIRI 2D sky subtraction (one notebook per filter)
 
 | Filter(s) | Notebook | Output |
 |---|---|---|
@@ -41,7 +44,7 @@ Degree-2 2D polynomial fitted to background pixels (segmentation mask
 mask are stored in the SKYMODEL / SKYMASK extensions (reversible).
 NIRCam: no post-mosaic sky subtraction (see [A]).
 
-## [C] 01/02 → 02, part 2: zero-point constants (all 14 filters, one script)
+## [C] 02 → 03: zero-point constants (all 14 filters, one script)
 
 | Code | Input | Output |
 |---|---|---|
@@ -51,7 +54,7 @@ Offsets = 3σ-clipped medians in a dark reference cavity common to all
 14 bands (measured on the matched maps; constants commute with
 convolution/reprojection — proof: `con_sub/tests/verify_zeropoint_commutes.py`).
 
-## [D] 02 → 03: PSF matching to F2100W + common grid (scripts, run in order)
+## [D] 03 → 04: PSF matching to F2100W + common grid (scripts, run in order)
 
 | Step | Script | Role |
 |---|---|---|
@@ -63,7 +66,7 @@ convolution/reprojection — proof: `con_sub/tests/verify_zeropoint_commutes.py`
 
 Configuration (paths, filters, grid): `psf_match/config.py`.
 
-## [E] 03 → derived (preliminary analysis, scripts in `con_sub/`, run in order)
+## [E] 04 → derived (preliminary analysis, scripts in `con_sub/`, run in order)
 
 | Step | Script | Output |
 |---|---|---|
